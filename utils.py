@@ -1,17 +1,32 @@
 import pyrebase
 import pandas as pd
 import json
+import streamlit as st
 
 # --- Initialize Firebase ---
-def init_firebase(service_account_json):
-    config = json.loads(service_account_json)
-    firebase = pyrebase.initialize_app(config)
+def init_firebase_from_secrets():
+    # Convert Streamlit secrets to a dictionary suitable for pyrebase config
+    firebase_config = {
+        "apiKey": "None",  # Pyrebase requires an API key, but it's not strictly used for service account authentication
+        "authDomain": st.secrets["firebase"]["project_id"] + ".firebaseapp.com",
+        "databaseURL": "https://" + st.secrets["firebase"]["project_id"] + ".firebaseio.com",
+        "projectId": st.secrets["firebase"]["project_id"],
+        "storageBucket": st.secrets["firebase"]["project_id"] + ".appspot.com",
+        "messagingSenderId": "None", # Replace with actual if you use messaging
+        "appId": "None", # Replace with actual if you use app id
+        "serviceAccount": st.secrets["firebase"]
+    }
+    
+    # Remove "type" from the service account dict if it's there, as pyrebase expects specific keys
+    if "type" in firebase_config["serviceAccount"]:
+        del firebase_config["serviceAccount"]["type"]
+
+    firebase = pyrebase.initialize_app(firebase_config)
     global db
     db = firebase.database()
 
 # Call initialization
-import streamlit as st
-init_firebase(st.secrets["firebase"]["service_account"])
+init_firebase_from_secrets()
 
 # --- CRUD Operations ---
 def add_certificate(cert_no, amount, issue_date, maturity_date):
