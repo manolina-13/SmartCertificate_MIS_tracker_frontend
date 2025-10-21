@@ -8,23 +8,28 @@ def init_firebase_from_secrets():
     # Make a mutable copy of the secrets dictionary
     service_account_details = dict(st.secrets["firebase"])
 
-    # Pyrebase requires an API key, but it's not strictly used for service account authentication
-    # for a Realtime Database setup. We'll set it to None as a placeholder.
-    # Also, populate other fields from the service_account_details.
+    # Pyrebase's initialize_app expects the serviceAccount parameter
+    # to be the dictionary *containing* the service account credentials directly,
+    # not a dictionary where 'serviceAccount' is a key pointing to another dict.
+    # So, we pass 'service_account_details' directly as the value for 'serviceAccount'.
+
+    # It also requires a projectId, databaseURL, and potentially others.
+    # We construct these from the service_account_details.
+
     firebase_config = {
-        "apiKey": None,
+        "apiKey": None,  # Not strictly needed for service account auth with Realtime Database
         "authDomain": service_account_details["project_id"] + ".firebaseapp.com",
         "databaseURL": "https://" + service_account_details["project_id"] + ".firebaseio.com",
         "projectId": service_account_details["project_id"],
         "storageBucket": service_account_details["project_id"] + ".appspot.com",
         "messagingSenderId": None, # Replace with actual if you use messaging
         "appId": None, # Replace with actual if you use app id
-        "serviceAccount": service_account_details
+        "serviceAccount": service_account_details # Pass the actual dictionary here
     }
-    
-    # Remove "type" from the service account dict if it's there, as pyrebase expects specific keys
-    if "type" in firebase_config["serviceAccount"]:
-        del firebase_config["serviceAccount"]["type"]
+
+    # The 'type' key is expected by oauth2client but not specifically removed by pyrebase,
+    # so we don't need to delete it. The previous del was an attempt to fix a different issue.
+    # The 'type' key with value "service_account" is exactly what it expects.
 
     firebase = pyrebase.initialize_app(firebase_config)
     global db
