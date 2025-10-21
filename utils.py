@@ -1,51 +1,58 @@
-import pandas as pd
-from datetime import datetime
 import pyrebase
+import pandas as pd
+import json
+import datetime as dt
 
-# ----------------- Initialize Firebase -----------------
-firebase_config = None
+# Firebase initialization
+firebase = None
 db = None
 
-def init_firebase(config):
-    """
-    Call this from app.py to initialize Firebase once
-    """
-    global firebase_config, db
-    firebase_config = config
-    firebase = pyrebase.initialize_app(firebase_config)
+def init_firebase(service_account_json):
+    global firebase, db
+    # Load service account JSON from Streamlit secrets
+    config = json.loads(service_account_json)
+    firebase = pyrebase.initialize_app(config)
     db = firebase.database()
 
-# ----------------- Certificate Functions -----------------
+# Initialize Firebase using secrets
+# This assumes your Streamlit app imports st first
+import streamlit as st
+init_firebase(st.secrets["firebase"]["service_account"])
+
+# --- Certificate Functions ---
+
 def add_certificate(cert_no, amount, issue_date, maturity_date):
-    record = {
+    data = {
         "Certificate_Number": cert_no,
-        "Amount": amount,
-        "Issue_Date": issue_date.strftime("%Y-%m-%d"),
-        "Maturity_Date": maturity_date.strftime("%Y-%m-%d")
+        "Amount": float(amount),
+        "Issue_Date": str(issue_date),
+        "Maturity_Date": str(maturity_date)
     }
-    db.child("certificates").push(record)
+    db.child("certificates").push(data)
 
 def get_certificates():
-    data = db.child("certificates").get()
-    if data.each() is None:
-        return pd.DataFrame(columns=["Certificate_Number", "Amount", "Issue_Date", "Maturity_Date", "Key"])
+    certs = db.child("certificates").get()
+    if certs.each() is None:
+        return pd.DataFrame(columns=["Key", "Certificate_Number", "Amount", "Issue_Date", "Maturity_Date"])
     
-    records = []
-    for item in data.each():
-        record = item.val()
-        record["Key"] = item.key()
-        records.append(record)
-    df = pd.DataFrame(records)
+    data = []
+    for c in certs.each():
+        record = c.val()
+        record["Key"] = c.key()
+        data.append(record)
+    df = pd.DataFrame(data)
+    # Reorder columns
+    df = df[["Key", "Certificate_Number", "Amount", "Issue_Date", "Maturity_Date"]]
     return df
 
 def delete_certificate(key):
     db.child("certificates").child(key).remove()
 
 def edit_certificate(key, cert_no, amount, issue_date, maturity_date):
-    record = {
+    data = {
         "Certificate_Number": cert_no,
-        "Amount": amount,
-        "Issue_Date": issue_date.strftime("%Y-%m-%d"),
-        "Maturity_Date": maturity_date.strftime("%Y-%m-%d")
+        "Amount": float(amount),
+        "Issue_Date": str(issue_date),
+        "Maturity_Date": str(maturity_date)
     }
-    db.child("certificates").child(key).update(record)
+    db.child("certificates").child(key).update(data)
