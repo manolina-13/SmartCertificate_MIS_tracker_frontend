@@ -1,13 +1,10 @@
 import streamlit as st
 import pandas as pd
 import datetime as dt
-from utils import init_firebase, add_certificate, get_certificates, delete_certificate, edit_certificate
+from utils import add_certificate, get_certificates, delete_certificate, edit_certificate
 
 st.set_page_config(page_title="MIS Certificate Tracker", layout="centered")
 st.title("📜 MIS Certificate Tracker")
-
-# ---------- Initialize Firebase ----------
-init_firebase(st.secrets["firebase"])
 
 # --- Form to Add Certificate ---
 with st.form("mis_form"):
@@ -26,21 +23,22 @@ st.subheader("📅 All Certificates")
 df = get_certificates()
 
 # Calculate Days Left
-df["Maturity_Date"] = pd.to_datetime(df["Maturity_Date"])
-df["Days_Left"] = (df["Maturity_Date"].dt.date - dt.date.today()).apply(lambda x: x.days)
+if not df.empty:
+    df["Maturity_Date"] = pd.to_datetime(df["Maturity_Date"])
+    df["Days_Left"] = (df["Maturity_Date"].dt.date - dt.date.today()).apply(lambda x: x.days)
 
-# Highlight certificates <=10 days
-def highlight_due(row):
-    return ['background-color: #FFCCCC' if row.Days_Left <= 10 else '' for _ in row]
+    # Highlight certificates <=10 days
+    def highlight_due(row):
+        return ['background-color: #FFCCCC' if row.Days_Left <= 10 else '' for _ in row]
 
-# Display full table with highlight
-st.dataframe(df.style.apply(highlight_due, axis=1))
+    # Display full table with highlight
+    st.dataframe(df.style.apply(highlight_due, axis=1))
 
-# Show warning table for due certificates
-due = df[df["Days_Left"] <= 10]
-if not due.empty:
-    st.warning("⚠️ Certificates maturing soon!")
-    st.dataframe(due.drop(columns=["Key"]))
+    # Show warning table for due certificates
+    due = df[df["Days_Left"] <= 10]
+    if not due.empty:
+        st.warning("⚠️ Certificates maturing soon!")
+        st.dataframe(due.drop(columns=["Key"]))
 
 # --- Edit/Delete Section ---
 st.subheader("✏️ Edit or Delete Certificate")
