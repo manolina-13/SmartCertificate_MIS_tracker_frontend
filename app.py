@@ -1,10 +1,13 @@
 import streamlit as st
 import pandas as pd
 import datetime as dt
-from utils import add_certificate, get_certificates, delete_certificate, edit_certificate
+from utils import init_firebase, add_certificate, get_certificates, delete_certificate, edit_certificate
 
 st.set_page_config(page_title="MIS Certificate Tracker", layout="centered")
 st.title("📜 MIS Certificate Tracker")
+
+# ---------- Initialize Firebase ----------
+init_firebase(st.secrets["firebase"])
 
 # --- Form to Add Certificate ---
 with st.form("mis_form"):
