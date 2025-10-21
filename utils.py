@@ -5,16 +5,21 @@ import streamlit as st
 
 # --- Initialize Firebase ---
 def init_firebase_from_secrets():
-    # Convert Streamlit secrets to a dictionary suitable for pyrebase config
+    # Make a mutable copy of the secrets dictionary
+    service_account_details = dict(st.secrets["firebase"])
+
+    # Pyrebase requires an API key, but it's not strictly used for service account authentication
+    # for a Realtime Database setup. We'll set it to None as a placeholder.
+    # Also, populate other fields from the service_account_details.
     firebase_config = {
-        "apiKey": "None",  # Pyrebase requires an API key, but it's not strictly used for service account authentication
-        "authDomain": st.secrets["firebase"]["project_id"] + ".firebaseapp.com",
-        "databaseURL": "https://" + st.secrets["firebase"]["project_id"] + ".firebaseio.com",
-        "projectId": st.secrets["firebase"]["project_id"],
-        "storageBucket": st.secrets["firebase"]["project_id"] + ".appspot.com",
-        "messagingSenderId": "None", # Replace with actual if you use messaging
-        "appId": "None", # Replace with actual if you use app id
-        "serviceAccount": st.secrets["firebase"]
+        "apiKey": None,
+        "authDomain": service_account_details["project_id"] + ".firebaseapp.com",
+        "databaseURL": "https://" + service_account_details["project_id"] + ".firebaseio.com",
+        "projectId": service_account_details["project_id"],
+        "storageBucket": service_account_details["project_id"] + ".appspot.com",
+        "messagingSenderId": None, # Replace with actual if you use messaging
+        "appId": None, # Replace with actual if you use app id
+        "serviceAccount": service_account_details
     }
     
     # Remove "type" from the service account dict if it's there, as pyrebase expects specific keys
